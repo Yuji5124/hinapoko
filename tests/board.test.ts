@@ -79,6 +79,13 @@ describe('turn lifecycle', () => {
     expect(result.cascades).toBeGreaterThan(1);
     expect(g.board.every(row => row.every(cell => cell.animal >= 0))).toBe(true);
   });
+  it('counts collected animals toward an animal target instead of slab tiles', async () => {
+    const targetStage = { ...stageData, slabGoal: 0, targetAnimals: { animal: 0, count: 3 } };
+    const g = new Game(targetStage, 23);
+    const result = await g.play({ row: 2, col: 0 }, { row: 2, col: 1 }, async()=>{});
+    expect(g.targetAnimalsCleared).toBeGreaterThanOrEqual(3);
+    expect(result.state).toBe('COMPLETE');
+  });
   it('activates an arrow bomb across its row', async () => {
     const g = new Game(stageData, 31); g.board[0][0].bomb = 'arrow-row';
     const result = await g.play({row:0,col:0},{row:0,col:1},async()=>{});

@@ -7,6 +7,9 @@ export class Game {
   board: Board;
   moves: number;
   slabsBroken = 0;
+  targetAnimalsCleared = 0;
+  cascadeNumber = 0;
+  readonly refilledCells = new Set<string>();
   state: GameState = 'IDLE';
   private random: () => number;
   constructor(readonly stage: Stage, seed = Date.now()) { this.random = createSeed(seed); this.board = createBoard(stage, this.random); this.moves = stage.moves; }
@@ -25,6 +28,8 @@ export class Game {
     const bombsGenerated: BombType[] = [];
     let isFirstPass = true;
     while ((findMatches(this.board).length || (isFirstPass && activatedBombs)) && cascades < 30) {
+      this.cascadeNumber = cascades;
+      this.refilledCells.clear();
       this.state = 'MATCHING'; await pause(170);
       const currentMatches = findMatches(this.board);
       const clear = new Set(currentMatches.flatMap(m => m.cells.map(p => key(p.row, p.col))));
@@ -38,6 +43,7 @@ export class Game {
       for (const id of clear) {
         const [r, c] = parseKey(id), cell = this.board[r][c];
         if (cell.slab) { cell.slab = false; clearedSlabs++; }
+        if (cell.animal === this.stage.targetAnimals?.animal) this.targetAnimalsCleared++;
         if (!(createsBomb && bombAnchor && r === bombAnchor.row && c === bombAnchor.col)) cell.animal = -1;
       }
       if (createsBomb && newBomb && bombAnchor) { this.board[bombAnchor.row][bombAnchor.col].bomb = newBomb; bombsGenerated.push(newBomb); }
@@ -53,6 +59,7 @@ export class Game {
           top++;
           const survivors = this.board.slice(top, bottom + 1).map(row => row[c]).filter(cell => cell.animal >= 0);
           const missing = bottom - top + 1 - survivors.length;
+          for (let r = top; r < top + missing; r++) this.refilledCells.add(key(r, c));
           const next = [...Array.from({ length: missing }, () => ({ animal: Math.floor(this.random() * this.stage.animalKinds), slab: false })), ...survivors];
           for (let r = top; r <= bottom; r++) this.board[r][c] = next[r - top];
           bottom = top - 1;
@@ -61,9 +68,14 @@ export class Game {
       this.state = 'REFILLING'; await pause(120);
     }
     this.slabsBroken += clearedSlabs;
-    this.state = this.slabsBroken >= this.stage.slabGoal ? 'COMPLETE' : this.moves <= 0 ? 'FAILED' : 'IDLE';
+    this.state = this.goalReached() ? 'COMPLETE' : this.moves <= 0 ? 'FAILED' : 'IDLE';
     if (this.state === 'IDLE' && !hasValidMove(this.board)) this.board = this.shuffleBoard();
     return { accepted: true, cascades, clearedSlabs, state: this.state, bombsGenerated };
+  }
+
+  private goalReached(): boolean {
+    if (this.stage.targetAnimals) return this.targetAnimalsCleared >= this.stage.targetAnimals.count;
+    return this.slabsBroken >= this.stage.slabGoal;
   }
 
   private expandBombEffects(clear: Set<string>, directlyActivated: Position[]): void {

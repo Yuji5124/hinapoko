@@ -3,7 +3,7 @@ export type Position = { row: number; col: number };
 export type Board = Cell[][];
 export type Match = { cells: Position[]; orientation: 'horizontal' | 'vertical' };
 export type BombType = 'arrow-row' | 'arrow-column' | 'double' | 'rainbow';
-export type Stage = { id: number; rows: number; columns: number; animalKinds: number; moves: number; slabGoal: number; slabs: number[][]; holes?: number[][]; tutorialSwap?: number[][]; initialAnimals?: number[][] };
+export type Stage = { id: number; rows: number; columns: number; animalKinds: number; moves: number; slabGoal: number; targetAnimals?: { animal: number; count: number }; slabs: number[][]; holes?: number[][]; tutorialSwap?: number[][]; initialAnimals?: number[][] };
 
 export function seededRandom(seed: number): () => number {
   let state = seed >>> 0;
