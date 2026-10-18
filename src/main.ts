@@ -77,7 +77,7 @@ class PlayScene extends Phaser.Scene {
     this.drawBackground(width, height);
     this.panel(width / 2, 66, Math.min(width - 30, 400), 95, 0xf8d288, 0xa9662f);
     this.add.text(width / 2, 39, 'ひなポコ', { fontFamily: 'system-ui, sans-serif', fontSize: '38px', fontStyle: 'bold', color: '#ff6684', stroke: '#ffffff', strokeThickness: 7 }).setOrigin(0.5);
-    this.add.text(width / 2, 80, `ステージ ${String(this.activeStage.id).padStart(2, '0')} · どうぶつを ならべよう！`, { fontFamily: 'system-ui, sans-serif', fontSize: '15px', fontStyle: 'bold', color: '#76502f' }).setOrigin(0.5);
+    this.add.text(width / 2, 80, `ステージ ${String(this.activeStage.id).padStart(2, '0')} · どうぶつを けそう！`, { fontFamily: 'system-ui, sans-serif', fontSize: '15px', fontStyle: 'bold', color: '#76502f' }).setOrigin(0.5);
 
     const cardY = 174, cardW = Math.min((width - 42) / 2, 182);
     this.panel(width / 2 - cardW / 2 - 5, cardY, cardW, 76, 0xfff3ce, 0xc77b3c);
@@ -85,15 +85,8 @@ class PlayScene extends Phaser.Scene {
     this.add.text(width / 2 - cardW / 2 - 5, cardY + 10, `${this.engine.moves}`, { fontSize: '38px', color: '#f04755', fontStyle: 'bold', stroke: '#fff', strokeThickness: 5 }).setOrigin(0.5);
     this.panel(width / 2 + cardW / 2 + 5, cardY, cardW, 76, 0xfff3ce, 0xc77b3c);
     const goalCardX = width / 2 + cardW / 2 + 5;
-    if (this.activeStage.targetAnimals) {
-      const kind = this.activeStage.targetAnimals.animal;
-      this.add.text(goalCardX, cardY - 17, 'あつめよう', { fontSize: '14px', color: '#795334', fontStyle: 'bold' }).setOrigin(0.5);
-      this.add.text(goalCardX - 34, cardY + 10, kind === 1 ? '🐰' : '🐥', { fontSize: '30px' }).setOrigin(0.5);
-      this.add.text(goalCardX + 25, cardY + 10, `${Math.min(this.engine.targetAnimalsCleared, this.activeStage.targetAnimals.count)} / ${this.activeStage.targetAnimals.count}`, { fontSize: '24px', color: '#7b5535', fontStyle: 'bold', stroke: '#fff', strokeThickness: 4 }).setOrigin(0.5);
-    } else {
-      this.add.text(goalCardX, cardY - 17, 'いた', { fontSize: '14px', color: '#795334', fontStyle: 'bold' }).setOrigin(0.5);
-      this.add.text(goalCardX, cardY + 10, `${Math.min(this.engine.slabsBroken, this.activeStage.slabGoal)} / ${this.activeStage.slabGoal}`, { fontSize: '29px', color: '#7b5535', fontStyle: 'bold', stroke: '#fff', strokeThickness: 4 }).setOrigin(0.5);
-    }
+    this.add.text(goalCardX, cardY - 17, 'けした どうぶつ', { fontSize: '14px', color: '#795334', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add.text(goalCardX, cardY + 10, `${Math.min(this.engine.animalsCleared, this.activeStage.animalGoal)} / ${this.activeStage.animalGoal} ひき`, { fontSize: '23px', color: '#7b5535', fontStyle: 'bold', stroke: '#fff', strokeThickness: 4 }).setOrigin(0.5);
 
     this.panel(width / 2, this.boardY + this.cellSize * this.activeStage.rows / 2, this.cellSize * this.activeStage.columns + 16, this.cellSize * this.activeStage.rows + 16, 0xb97a43, 0x87512c);
     const matching = this.engine.state === 'MATCHING' ? new Set(findMatches(this.engine.board).flatMap(m=>m.cells.map(p=>`${p.row},${p.col}`))) : new Set<string>();
@@ -102,10 +95,6 @@ class PlayScene extends Phaser.Scene {
       const cell = this.engine.board[r][c];
       this.add.rectangle(x, y, this.cellSize - 5, this.cellSize - 5, 0x97623b).setStrokeStyle(2, 0x7d4d2f).setOrigin(0.5);
       if (cell.hole) { this.add.ellipse(x, y, this.cellSize * 0.64, this.cellSize * 0.48, 0x382719).setStrokeStyle(4, 0x8b623c); continue; }
-      if (cell.slab) {
-        this.add.rectangle(x, y, this.cellSize - 11, this.cellSize - 11, 0xe8c99f).setStrokeStyle(3, 0xb18a5d).setAlpha(0.94);
-        this.add.text(x, y + 1, '🐾', { fontSize: `${this.cellSize * 0.43}px` }).setOrigin(0.5).setAlpha(0.7);
-      }
       if (cell.animal < 0) {
         if (this.engine.state === 'FALLING') for (let i=0;i<3;i++) this.add.ellipse(x+(i-1)*this.cellSize*.13,y-this.cellSize*.08,this.cellSize*.045,this.cellSize*.19,0xfff5d2).setAlpha(.65);
         continue;
@@ -153,7 +142,7 @@ class PlayScene extends Phaser.Scene {
       this.add.rectangle(width / 2, height / 2, width, height, 0x382418).setAlpha(0.6);
       this.panel(width / 2, height / 2, width * 0.82, 200, 0xfff2c8, 0xf0a84c);
       this.add.text(width / 2, height / 2 - 30, 'やったね！', { fontSize: '34px', color: '#f07361', fontStyle: 'bold' }).setOrigin(0.5);
-      this.add.text(width / 2, height / 2 + 18, this.activeStage.targetAnimals ? 'どうぶつを あつめたよ ⭐' : 'いたを こわせたよ ⭐', { fontSize: '18px', color: '#76502f', fontStyle: 'bold' }).setOrigin(0.5);
+      this.add.text(width / 2, height / 2 + 18, 'どうぶつを たくさん けせたね！ ⭐', { fontSize: '18px', color: '#76502f', fontStyle: 'bold' }).setOrigin(0.5);
       this.button(width / 2, height / 2 + 72, this.activeStage.id < stages.length ? '➡️' : '🔄', this.activeStage.id < stages.length ? 'つぎへ' : 'さいしょから', () => this.loadStage(this.activeStage.id < stages.length ? this.activeStage.id + 1 : 1));
     } else if (this.engine.state === 'FAILED') {
       this.add.rectangle(width / 2, height / 2, width, height, 0x382418).setAlpha(0.55);
@@ -165,19 +154,32 @@ class PlayScene extends Phaser.Scene {
 
   private panel(x: number, y: number, w: number, h: number, fill: number, edge: number): void { this.add.rectangle(x, y + 3, w, h, 0x794a28).setOrigin(0.5).setAlpha(0.22); this.add.rectangle(x, y, w, h, fill).setOrigin(0.5).setStrokeStyle(4, edge); }
   private drawBackground(width: number, height: number): void {
-    this.add.rectangle(width/2,height/2,width,height,0xb8edff).setDepth(-10);
-    this.add.circle(width-48,66,34,0xffdf81).setAlpha(.88).setDepth(-9);
-    for (const [cx,cy,s] of [[42,108,1],[width-30,150,.85],[width*.2,52,.55],[width*.78,90,.6]] as number[][]) {
-      const cloud=this.add.container(cx,cy).setDepth(-8).setAlpha(.9).setScale(s);
-      cloud.add([this.add.ellipse(0,8,80,28,0xffffff),this.add.circle(-20,0,20,0xffffff),this.add.circle(2,-8,25,0xffffff),this.add.circle(24,3,18,0xffffff)]);
+    this.add.rectangle(width/2,height/2,width,height,0x79d6fa).setDepth(-12);
+    this.add.rectangle(width/2,height*.23,width,height*.46,0xffd9ec).setAlpha(.25).setDepth(-11);
+    this.add.circle(width-51,72,51,0xffa83e).setAlpha(.28).setDepth(-10);
+    this.add.circle(width-51,72,37,0xffe769).setStrokeStyle(5,0xfff7b0).setDepth(-9);
+    for(let i=0;i<12;i++) {
+      const a=i*Math.PI/6, x1=width-51+Math.cos(a)*44, y1=72+Math.sin(a)*44, x2=width-51+Math.cos(a)*56, y2=72+Math.sin(a)*56;
+      this.add.line(0,0,x1,y1,x2,y2,0xfff4a7,.95).setLineWidth(4).setDepth(-9);
     }
-    this.add.ellipse(width*.12,height+35,width*.9,180,0x9bdc87).setAlpha(.8).setDepth(-7);
-    this.add.ellipse(width*.82,height+40,width*1.1,200,0x8ed27a).setAlpha(.7).setDepth(-7);
-    for(let i=0;i<13;i++) {
-      const x=(i*83+29)%(width||1), y=235+(i*137)%(Math.max(180,height-280));
-      const flower=this.add.container(x,y).setDepth(-6).setAlpha(.7);
-      const tint=[0xfff5bf,0xffd5e1,0xffffff][i%3];
-      flower.add([this.add.circle(0,-5,4,tint),this.add.circle(-5,0,4,tint),this.add.circle(5,0,4,tint),this.add.circle(0,5,4,tint),this.add.circle(0,0,2,0xffcf54)]);
+    for (const [cx,cy,s] of [[42,111,1],[width-26,157,.95],[width*.2,48,.58],[width*.72,110,.7],[width*.48,152,.5]] as number[][]) {
+      const cloud=this.add.container(cx,cy).setDepth(-8).setAlpha(.98).setScale(s);
+      cloud.add([this.add.ellipse(0,8,91,32,0xffffff),this.add.circle(-25,1,22,0xffffff),this.add.circle(1,-9,29,0xffffff),this.add.circle(28,2,20,0xffffff)]);
+    }
+    this.add.ellipse(width*.1,height+42,width*1.15,220,0x65c86f).setAlpha(.94).setDepth(-7);
+    this.add.ellipse(width*.83,height+55,width*1.2,250,0x83d65e).setAlpha(.92).setDepth(-7);
+    for(let i=0;i<36;i++) {
+      const side=i%2===0, lane=Math.floor(i/2), x=side?12+lane%3*13:width-12-lane%3*13;
+      const y=218+lane*48;
+      if(y>height-12) continue;
+      const flower=this.add.container(x,y).setDepth(-6).setAlpha(.98).setScale(lane%4===0?1.25:1);
+      const tint=[0xfff34f,0xff87bc,0xffffff,0xffa85e,0xc7a5ff][lane%5];
+      flower.add([this.add.circle(0,-6,5.5,tint),this.add.circle(-6,0,5.5,tint),this.add.circle(6,0,5.5,tint),this.add.circle(0,6,5.5,tint),this.add.circle(0,0,2.8,0xffa72e)]);
+      flower.add([this.add.ellipse(-8,14,6,13,0x69c947).setAngle(-38),this.add.ellipse(8,17,6,13,0x56b944).setAngle(38)]);
+    }
+    for(let i=0;i<20;i++) {
+      const x=(i*71+19)%(width||1), y=176+(i*89)%(Math.max(130,height-210));
+      this.add.star(x,y,4,2.5,6,[0xffffff,0xfff080,0xffa9d0][i%3]).setAlpha(.9).setDepth(-5);
     }
   }
   private drawAnimal(x: number, y: number, kind: number): void {

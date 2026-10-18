@@ -1,9 +1,9 @@
-export type Cell = { animal: number; slab: boolean; bomb?: BombType; hole?: boolean };
+export type Cell = { animal: number; bomb?: BombType; hole?: boolean };
 export type Position = { row: number; col: number };
 export type Board = Cell[][];
 export type Match = { cells: Position[]; orientation: 'horizontal' | 'vertical' };
 export type BombType = 'arrow-row' | 'arrow-column' | 'double' | 'rainbow';
-export type Stage = { id: number; rows: number; columns: number; animalKinds: number; moves: number; slabGoal: number; targetAnimals?: { animal: number; count: number }; slabs: number[][]; holes?: number[][]; tutorialSwap?: number[][]; initialAnimals?: number[][] };
+export type Stage = { id: number; rows: number; columns: number; animalKinds: number; moves: number; animalGoal: number; holes?: number[][]; tutorialSwap?: number[][]; initialAnimals?: number[][] };
 
 export function seededRandom(seed: number): () => number {
   let state = seed >>> 0;
@@ -83,10 +83,9 @@ export function hasValidMove(board: Board): boolean {
 }
 
 export function createBoard(stage: Stage, random: () => number): Board {
-  const slabCells = new Set(stage.slabs.map(([r, c]) => `${r},${c}`));
   const holeCells = new Set((stage.holes ?? []).map(([r, c]) => `${r},${c}`));
   if (stage.initialAnimals) {
-    const board = stage.initialAnimals.map((row, r) => row.map((animal, c) => holeCells.has(`${r},${c}`) ? ({ animal: -1, slab: false, hole: true }) : ({ animal, slab: slabCells.has(`${r},${c}`) })));
+    const board = stage.initialAnimals.map((row, r) => row.map((animal, c) => holeCells.has(`${r},${c}`) ? ({ animal: -1, hole: true }) : ({ animal })));
     if (board.length !== stage.rows || board.some(row => row.length !== stage.columns) || findMatches(board).length || !hasValidMove(board)) throw new Error('ステージの初期盤面が不正です');
     return board;
   }
@@ -95,11 +94,11 @@ export function createBoard(stage: Stage, random: () => number): Board {
     for (let r = 0; r < stage.rows; r++) {
       const row: Cell[] = [];
       for (let c = 0; c < stage.columns; c++) {
-        if (holeCells.has(`${r},${c}`)) { row.push({ animal: -1, slab: false, hole: true }); continue; }
+        if (holeCells.has(`${r},${c}`)) { row.push({ animal: -1, hole: true }); continue; }
         let animal = Math.floor(random() * stage.animalKinds);
         let guard = 0;
         while (guard++ < 20 && ((c >= 2 && !row[c - 1].hole && !row[c - 2].hole && row[c - 1].animal === animal && row[c - 2].animal === animal) || (r >= 2 && !board[r - 1][c].hole && !board[r - 2][c].hole && board[r - 1][c].animal === animal && board[r - 2][c].animal === animal))) animal = Math.floor(random() * stage.animalKinds);
-        row.push({ animal, slab: slabCells.has(`${r},${c}`), bomb: undefined });
+        row.push({ animal });
       }
       board.push(row);
     }

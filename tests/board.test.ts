@@ -13,7 +13,7 @@ import stage09 from '../src/game/levels/stage09.json';
 import stage10 from '../src/game/levels/stage10.json';
 
 const stageData = stage as Stage;
-const boardOf = (rows: number[][]): Board => rows.map(row => row.map(animal => ({ animal, slab: false })));
+const boardOf = (rows: number[][]): Board => rows.map(row => row.map(animal => ({ animal })));
 
 describe('match rules', () => {
   it('finds horizontal and vertical runs of at least three', () => {
@@ -35,7 +35,7 @@ describe('match rules', () => {
     expect(new Set(findMatches(l).flatMap(m => m.cells.map(p => `${p.row},${p.col}`))).size).toBe(5);
   });
   it('generates boards without matches and with a legal move across 40 seeds', () => {
-    const randomStage = { ...stageData, initialAnimals: undefined, slabs: [] };
+    const randomStage = { ...stageData, initialAnimals: undefined };
     for (let seed = 0; seed < 40; seed++) { const b = createBoard(randomStage, seededRandom(seed)); expect(findMatches(b)).toHaveLength(0); expect(hasValidMove(b)).toBe(true); }
   });
   it('keeps each of the ten level layouts playable and match-free across fixed seeds', () => {
@@ -58,7 +58,7 @@ describe('turn lifecycle', () => {
     }
     expect(rejected).toBe(true); expect(g.moves).toBe(stageData.moves); expect(g.board.map(row => row.map(c => c.animal))).toEqual(before);
   });
-  it('spends one move, breaks slabs, falls, refills and completes after goal', async () => {
+  it('spends one move, clears animals, falls, refills and completes after goal', async () => {
     const g = new Game(stageData, 7);
     let accepted = false;
     for (let r=0;r<5&&!accepted;r++) for(let c=0;c<5&&!accepted;c++) for(const [dr,dc] of [[0,1],[1,0]]) {
@@ -74,16 +74,16 @@ describe('turn lifecycle', () => {
     const result = await g.play({row: 2, col: 0}, {row: 2, col: 1}, async()=>{});
     expect(result.accepted).toBe(true);
     expect(result.state).toBe('COMPLETE');
-    expect(g.slabsBroken).toBe(3);
+    expect(g.animalsCleared).toBeGreaterThanOrEqual(3);
     expect(g.moves).toBe(11);
     expect(result.cascades).toBeGreaterThan(1);
     expect(g.board.every(row => row.every(cell => cell.animal >= 0))).toBe(true);
   });
-  it('counts collected animals toward an animal target instead of slab tiles', async () => {
-    const targetStage = { ...stageData, slabGoal: 0, targetAnimals: { animal: 0, count: 3 } };
+  it('counts all cleared animals toward the stage goal', async () => {
+    const targetStage = { ...stageData, animalGoal: 3 };
     const g = new Game(targetStage, 23);
     const result = await g.play({ row: 2, col: 0 }, { row: 2, col: 1 }, async()=>{});
-    expect(g.targetAnimalsCleared).toBeGreaterThanOrEqual(3);
+    expect(g.animalsCleared).toBeGreaterThanOrEqual(3);
     expect(result.state).toBe('COMPLETE');
   });
   it('activates an arrow bomb across its row', async () => {
@@ -111,16 +111,16 @@ describe('turn lifecycle', () => {
     }
     expect([...generated].sort()).toEqual(['arrow-column','arrow-row','double','rainbow']);
   });
-  it('chains double and rainbow bomb effects and counts each slab once', async () => {
+  it('chains double and rainbow bomb effects and counts each cleared animal', async () => {
     const double=new Game(stageData,42); double.board[2][2].bomb='double';
     const d=await double.play({row:2,col:2},{row:2,col:3},async()=>{});
-    expect(d.state).toBe('COMPLETE'); expect(d.clearedSlabs).toBe(3);
+    expect(d.state).toBe('COMPLETE'); expect(double.animalsCleared).toBeGreaterThanOrEqual(3);
     const rainbow=new Game(stageData,43); rainbow.board[0][0].bomb='rainbow'; rainbow.board[0][1].bomb='rainbow';
     const r=await rainbow.play({row:0,col:0},{row:0,col:1},async()=>{});
-    expect(r.state).toBe('COMPLETE'); expect(r.clearedSlabs).toBe(3);
+    expect(r.state).toBe('COMPLETE'); expect(rainbow.animalsCleared).toBeGreaterThanOrEqual(3);
   });
-  it('fails at zero moves when the slab goal is still unmet', async () => {
-    const g = new Game({ ...stageData, moves: 1, slabGoal: 99 }, 32);
+  it('fails at zero moves when the animal goal is still unmet', async () => {
+    const g = new Game({ ...stageData, moves: 1, animalGoal: 999 }, 32);
     const result = await g.play({row:2,col:0},{row:2,col:1},async()=>{});
     expect(result.state).toBe('FAILED'); expect(g.moves).toBe(0);
   });

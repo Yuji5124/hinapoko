@@ -1,13 +1,12 @@
 import { areAdjacent, createBoard, findMatches, hasValidMove, specialForMatches, swapAnimals, type Board, type BombType, type Position, type Stage } from './board';
 
 export type GameState = 'IDLE' | 'SWAPPING' | 'MATCHING' | 'FALLING' | 'REFILLING' | 'COMPLETE' | 'FAILED';
-export type TurnResult = { accepted: boolean; cascades: number; clearedSlabs: number; state: GameState; bombsGenerated: BombType[] };
+export type TurnResult = { accepted: boolean; cascades: number; state: GameState; bombsGenerated: BombType[] };
 
 export class Game {
   board: Board;
   moves: number;
-  slabsBroken = 0;
-  targetAnimalsCleared = 0;
+  animalsCleared = 0;
   cascadeNumber = 0;
   readonly refilledCells = new Set<string>();
   state: GameState = 'IDLE';
@@ -15,16 +14,16 @@ export class Game {
   constructor(readonly stage: Stage, seed = Date.now()) { this.random = createSeed(seed); this.board = createBoard(stage, this.random); this.moves = stage.moves; }
 
   async play(a: Position, b: Position, pause: (ms: number) => Promise<void> = ms => new Promise(resolve => setTimeout(resolve, ms))): Promise<TurnResult> {
-    if (this.state !== 'IDLE' || !areAdjacent(a, b) || !this.inBounds(a) || !this.inBounds(b) || this.board[a.row][a.col].hole || this.board[b.row][b.col].hole) return { accepted: false, cascades: 0, clearedSlabs: 0, state: this.state, bombsGenerated: [] };
+    if (this.state !== 'IDLE' || !areAdjacent(a, b) || !this.inBounds(a) || !this.inBounds(b) || this.board[a.row][a.col].hole || this.board[b.row][b.col].hole) return { accepted: false, cascades: 0, state: this.state, bombsGenerated: [] };
     this.state = 'SWAPPING';
     const activatedBombs = Boolean(this.board[a.row][a.col].bomb || this.board[b.row][b.col].bomb);
     swapAnimals(this.board, a, b);
     await pause(140);
     const matches = findMatches(this.board);
-    if (!matches.length && !activatedBombs) { swapAnimals(this.board, a, b); await pause(130); this.state = 'IDLE'; return { accepted: false, cascades: 0, clearedSlabs: 0, state: this.state, bombsGenerated: [] }; }
+    if (!matches.length && !activatedBombs) { swapAnimals(this.board, a, b); await pause(130); this.state = 'IDLE'; return { accepted: false, cascades: 0, state: this.state, bombsGenerated: [] }; }
 
     this.moves--;
-    let cascades = 0, clearedSlabs = 0;
+    let cascades = 0;
     const bombsGenerated: BombType[] = [];
     let isFirstPass = true;
     while ((findMatches(this.board).length || (isFirstPass && activatedBombs)) && cascades < 30) {
@@ -42,9 +41,10 @@ export class Game {
       this.expandBombEffects(clear, isFirstPass && activatedBombs ? [a, b] : []);
       for (const id of clear) {
         const [r, c] = parseKey(id), cell = this.board[r][c];
-        if (cell.slab) { cell.slab = false; clearedSlabs++; }
-        if (cell.animal === this.stage.targetAnimals?.animal) this.targetAnimalsCleared++;
-        if (!(createsBomb && bombAnchor && r === bombAnchor.row && c === bombAnchor.col)) cell.animal = -1;
+        if (!(createsBomb && bombAnchor && r === bombAnchor.row && c === bombAnchor.col)) {
+          if (cell.animal >= 0) this.animalsCleared++;
+          cell.animal = -1;
+        }
       }
       if (createsBomb && newBomb && bombAnchor) { this.board[bombAnchor.row][bombAnchor.col].bomb = newBomb; bombsGenerated.push(newBomb); }
       cascades++;
@@ -60,22 +60,20 @@ export class Game {
           const survivors = this.board.slice(top, bottom + 1).map(row => row[c]).filter(cell => cell.animal >= 0);
           const missing = bottom - top + 1 - survivors.length;
           for (let r = top; r < top + missing; r++) this.refilledCells.add(key(r, c));
-          const next = [...Array.from({ length: missing }, () => ({ animal: Math.floor(this.random() * this.stage.animalKinds), slab: false })), ...survivors];
+          const next = [...Array.from({ length: missing }, () => ({ animal: Math.floor(this.random() * this.stage.animalKinds) })), ...survivors];
           for (let r = top; r <= bottom; r++) this.board[r][c] = next[r - top];
           bottom = top - 1;
         }
       }
       this.state = 'REFILLING'; await pause(120);
     }
-    this.slabsBroken += clearedSlabs;
     this.state = this.goalReached() ? 'COMPLETE' : this.moves <= 0 ? 'FAILED' : 'IDLE';
     if (this.state === 'IDLE' && !hasValidMove(this.board)) this.board = this.shuffleBoard();
-    return { accepted: true, cascades, clearedSlabs, state: this.state, bombsGenerated };
+    return { accepted: true, cascades, state: this.state, bombsGenerated };
   }
 
   private goalReached(): boolean {
-    if (this.stage.targetAnimals) return this.targetAnimalsCleared >= this.stage.targetAnimals.count;
-    return this.slabsBroken >= this.stage.slabGoal;
+    return this.animalsCleared >= this.stage.animalGoal;
   }
 
   private expandBombEffects(clear: Set<string>, directlyActivated: Position[]): void {
@@ -110,9 +108,7 @@ export class Game {
 
   private inBounds(p: Position): boolean { return p.row >= 0 && p.row < this.stage.rows && p.col >= 0 && p.col < this.stage.columns; }
   private shuffleBoard(): Board {
-    const slabs: number[][] = [];
-    for (let r = 0; r < this.board.length; r++) for (let c = 0; c < this.board[r].length; c++) if (this.board[r][c].slab) slabs.push([r, c]);
-    return createBoard({ ...this.stage, slabs, initialAnimals: undefined }, this.random);
+    return createBoard({ ...this.stage, initialAnimals: undefined }, this.random);
   }
 }
 

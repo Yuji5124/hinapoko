@@ -1,4 +1,4 @@
-const CACHE = 'hinapoko-v3';
+const CACHE = 'hinapoko-v4';
 const ROOT = new URL('./', self.location.href);
 
 self.addEventListener('install', event => {

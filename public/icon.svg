@@ -3,7 +3,7 @@
   <circle cx="256" cy="278" r="166" fill="#f6cd48" stroke="#9a622e" stroke-width="20"/>
   <ellipse cx="214" cy="262" rx="16" ry="24" fill="#3b2d27"/>
   <ellipse cx="298" cy="262" rx="16" ry="24" fill="#3b2d27"/>
-  <path d="M224 306 Q256 330 288 306 L256 350Z" fill="#f37832" stroke="#bd5d28" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M232 292 Q256 312 280 292 L256 322Z" fill="#f37832" stroke="#bd5d28" stroke-width="7" stroke-linejoin="round"/>
   <ellipse cx="168" cy="316" rx="28" ry="16" fill="#f29a51"/>
   <ellipse cx="344" cy="316" rx="28" ry="16" fill="#f29a51"/>
   <path d="M222 110 Q196 68 177 102 Q173 136 234 154 M286 110 Q312 68 331 102 Q335 136 274 154" fill="#f6cd48" stroke="#9a622e" stroke-width="15" stroke-linecap="round"/>

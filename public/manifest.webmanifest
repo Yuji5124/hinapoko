@@ -2,13 +2,13 @@
   "id": "./",
   "name": "ひなポコ HINAPOKO",
   "short_name": "ひなポコ",
-  "description": "どうぶつをならべて、いたをこわそう！",
+  "description": "どうぶつをならべて、たくさんけそう！",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#8ddbf4",
-  "theme_color": "#8ddbf4",
+  "background_color": "#79d6fa",
+  "theme_color": "#79d6fa",
   "icons": [
     { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
     { "src": "./apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
