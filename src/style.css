@@ -1,0 +1,4 @@
+* { box-sizing: border-box; }
+html, body, #game { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { background: #8ddbf4; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overscroll-behavior: none; touch-action: none; }
+canvas { display: block; touch-action: none; }
