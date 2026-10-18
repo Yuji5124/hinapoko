@@ -102,12 +102,13 @@ class PlayScene extends Phaser.Scene {
       this.add.ellipse(x, y + this.cellSize * 0.31, this.cellSize * 0.6, this.cellSize * 0.15, 0x573920).setAlpha(0.24);
       this.drawAnimal(x, y, cell.animal);
       if (matching.has(`${r},${c}`)) {
-        const pop=this.add.circle(x,y,this.cellSize*.35,0xfff7bd).setAlpha(.62);
-        const ring=this.add.circle(x,y,this.cellSize*.34).setStrokeStyle(3,0xffffff).setAlpha(.9);
-        this.tweens.add({targets:[pop,ring],scale:1.42,alpha:0,duration:250,ease:'Back.Out'});
-        for (let i=0;i<4;i++) {
-          const sparkle=this.add.star(x+Math.cos(i*Math.PI/2)*this.cellSize*.16,y+Math.sin(i*Math.PI/2)*this.cellSize*.16,4,this.cellSize*.035,this.cellSize*.075,0xffc83d).setAlpha(.95);
-          this.tweens.add({targets:sparkle,x:x+Math.cos(i*Math.PI/2)*this.cellSize*.43,y:y+Math.sin(i*Math.PI/2)*this.cellSize*.43,alpha:0,angle:90,duration:230,ease:'Cubic.Out'});
+        const pop=this.add.circle(x,y,this.cellSize*.35,0xfff7bd).setAlpha(.42);
+        const ring=this.add.circle(x,y,this.cellSize*.34).setStrokeStyle(4,0xffffff).setAlpha(.95);
+        this.tweens.add({targets:[pop,ring],scale:1.65 + Math.min(this.engine.cascadeNumber,4)*.12,alpha:0,duration:310 + this.engine.cascadeNumber*35,ease:'Back.Out'});
+        for (let i=0;i<8+Math.min(this.engine.cascadeNumber,4)*2;i++) {
+          const angle=Math.PI*2*i/(8+Math.min(this.engine.cascadeNumber,4)*2), distance=this.cellSize*(.4+(i%3)*.04);
+          const sparkle=this.add.star(x,y,5,this.cellSize*.035,this.cellSize*(.09+Math.min(this.engine.cascadeNumber,4)*.008),[0xffc83d,0xff73aa,0x79efff,0xffffff][i%4]).setAlpha(.98);
+          this.tweens.add({targets:sparkle,x:x+Math.cos(angle)*distance,y:y+Math.sin(angle)*distance,scale:.1,alpha:0,angle:140,duration:290+this.engine.cascadeNumber*40,ease:'Cubic.Out'});
         }
       } else if (this.engine.state === 'REFILLING' && this.engine.refilledCells.has(`${r},${c}`)) {
         const sparkle=this.add.star(x,y,this.engine.cascadeNumber > 0 ? 5 : 4,this.cellSize*.035,this.cellSize*.15,0xfff4a3).setAlpha(.9);
@@ -120,9 +121,15 @@ class PlayScene extends Phaser.Scene {
       if (this.selected?.row === r && this.selected.col === c) this.add.rectangle(x, y, this.cellSize - 4, this.cellSize - 4).setStrokeStyle(5, 0xfff06a);
       if (this.hint?.some(p => p.row === r && p.col === c)) this.add.rectangle(x, y, this.cellSize - 5, this.cellSize - 5).setStrokeStyle(5, 0x70f4fc).setAlpha(0.95);
     }
-    if (this.engine.state === 'MATCHING' && this.engine.cascadeNumber > 0) {
-      const chain = this.add.text(width / 2, this.boardY - 9, `${this.engine.cascadeNumber + 1}れんさ！`, { fontSize: '21px', fontStyle: 'bold', color: '#fff8bf', stroke: '#e4824c', strokeThickness: 5 }).setOrigin(0.5);
-      this.tweens.add({ targets: chain, scale: 1.18, yoyo: true, duration: 100, ease: 'Back.Out' });
+    if (this.engine.state === 'MATCHING') {
+      const chainCount = this.engine.cascadeNumber + 1;
+      const label = chainCount === 1 ? 'ぽんっ！' : `${chainCount}れんさ！`;
+      const chain = this.add.text(width / 2, this.boardY - 8, label, { fontSize: `${27+Math.min(chainCount,4)*2}px`, fontStyle: 'bold', color: '#fff878', stroke: '#e55d8b', strokeThickness: 7, shadow: { color: '#783e80', blur: 3, fill: true, offsetX: 2, offsetY: 3 } }).setOrigin(0.5);
+      this.tweens.add({ targets: chain, scale: 1.28, angle: chainCount%2 ? -3 : 3, yoyo: true, duration: 110, ease: 'Back.Out' });
+      if (chainCount > 1) for (const side of [-1,1]) {
+        const star = this.add.star(width/2+side*64,this.boardY-9,5,4,12,chainCount>3?0xff5e95:0xffc83d);
+        this.tweens.add({ targets:star,x:star.x+side*24,y:star.y-12,scale:1.65,angle:side*110,alpha:0,duration:360,ease:'Back.Out' });
+      }
     }
     if (this.hint) {
       const [a, b] = this.hint;
@@ -269,13 +276,20 @@ class PlayScene extends Phaser.Scene {
   private async tryMove(a: Position, b: Position): Promise<void> {
     if (this.busy) return;
     this.busy = true; this.selected = null; this.hint = null; this.lastAction = Date.now(); this.message = 'ぽんっ！'; this.draw();
+    let playedCascade = -1;
     const result = await this.engine.play(a, b, async (ms) => {
       this.draw();
+      if (this.engine.state === 'MATCHING' && this.engine.cascadeNumber !== playedCascade) {
+        playedCascade = this.engine.cascadeNumber;
+        const chain = playedCascade + 1;
+        this.sounds.play(Math.min(540 + chain*145, 1350));
+        this.cameras.main.shake(115 + Math.min(chain,4)*18, .0018 + Math.min(chain,4)*.0008);
+      }
       await new Promise(resolve => setTimeout(resolve, ms));
     });
     this.busy = false; this.lastAction = Date.now();
     if (!result.accepted) { this.message = 'となりの どうぶつを えらんでね'; this.draw(); return; }
-    this.sounds.play(470 + result.cascades * 75);
+    this.sounds.play(Math.min(640 + result.cascades * 95, 1350));
     this.message = result.cascades > 1 ? `${result.cascades}れんさ！ すごい！` : 'いいね！';
     if (result.state === 'COMPLETE') { this.completed = true; saveStage(this.activeStage.id + 1); this.sounds.play(750); }
     this.draw();
